@@ -48,17 +48,9 @@ struct CommandArgs {
 // Глобальные объекты
 Terminal terminal;
 FileSystem fs;
-// Инициализируем эти объекты после инициализации терминала в kmain
-Editor* editor = 0;
-SnakeGame* snakeGame = 0;
-ChatBot* chatBot = 0;
-
-// Очистка буфера клавиатуры
-void clearKeyboardBuffer() {
-    while (inb(0x64) & 1) {
-        inb(0x60);
-    }
-}
+Editor editor(&terminal, &fs);
+SnakeGame snakeGame(&terminal);
+ChatBot chatBot(&terminal);
 
 // Разбор строки команды на аргументы
 void parseCommand(const char* cmd, CommandArgs* args) {
@@ -257,34 +249,17 @@ void processCommand(const char* cmd, multiboot_info* mbi) {
         }
     }
     else if (strcmp(args.argv[0], "edit") == 0) {
-        if (editor && args.argc > 1) {
-            terminal.writeLineColored("Starting text editor...", terminal.makeColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
-            clearKeyboardBuffer();
-            editor->edit(args.argv[1]);
-            terminal.writeLineColored("Text editor closed.", terminal.makeColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
+        if (args.argc > 1) {
+            editor.edit(args.argv[1]);
         } else {
             terminal.writeLineColored("Usage: edit <filename>", terminal.makeColor(VGA_COLOR_YELLOW, VGA_COLOR_BLACK));
         }
     }
     else if (strcmp(args.argv[0], "game") == 0) {
-        if (snakeGame) {
-            terminal.writeLineColored("Starting Snake game...", terminal.makeColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
-            clearKeyboardBuffer();
-            snakeGame->run();
-            terminal.writeLineColored("Snake game closed.", terminal.makeColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
-        } else {
-            terminal.writeLineColored("Error: Snake game not initialized", terminal.makeColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK));
-        }
+        snakeGame.run();
     }
     else if (strcmp(args.argv[0], "chat") == 0) {
-        if (chatBot) {
-            terminal.writeLineColored("Starting chat bot...", terminal.makeColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
-            clearKeyboardBuffer();
-            chatBot->run();
-            terminal.writeLineColored("Chat bot closed.", terminal.makeColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
-        } else {
-            terminal.writeLineColored("Error: Chat bot not initialized", terminal.makeColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK));
-        }
+        chatBot.run();
     }
     else if (strcmp(args.argv[0], "info") == 0) {
         cmdInfo(mbi);
@@ -299,7 +274,6 @@ void processCommand(const char* cmd, multiboot_info* mbi) {
         terminal.writeLineColored("Type 'help' for a list of commands.", terminal.makeColor(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK));
     }
 }
-
 // Точка входа в ядро
 extern "C" void kmain(unsigned long magic, unsigned long addr) {
     // Проверка, что загрузились через Multiboot
@@ -313,11 +287,6 @@ extern "C" void kmain(unsigned long magic, unsigned long addr) {
     
     // Инициализация терминала
     terminal.initialize();
-    
-    // Теперь инициализируем остальные объекты
-    editor = new Editor(&terminal, &fs);
-    snakeGame = new SnakeGame(&terminal);
-    chatBot = new ChatBot(&terminal);
     
     // Приветственное сообщение
     unsigned char titleColor = terminal.makeColor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
