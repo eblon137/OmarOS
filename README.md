@@ -45,7 +45,7 @@ sudo apt install build-essential nasm gcc-multilib g++-multilib xorriso grub-pc-
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/OmarOS.git
+git clone https://github.com/eblon137/OmarOS
 cd OmarOS
 ```
 
